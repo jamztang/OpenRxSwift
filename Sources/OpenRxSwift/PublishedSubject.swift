@@ -80,6 +80,8 @@ public class PublishedSubject<T> {
         func handle(_ event: Event<T>) -> Effect? {
             guard isFinished == false else { return nil }
             switch event {
+            case .tick:
+                return nil
             case .completed:
                 return .apply(.completed)
             case .next(let value):
@@ -94,25 +96,28 @@ public class PublishedSubject<T> {
         case apply(State)
     }
 
+    public static func from(_ array: [Event<T>]) -> (PublishedSubject<T>, () -> Void) {
+        let subject = PublishedSubject<T>()
+        var iterator = array.makeIterator()
+        let next: (() -> Void) = {
+            if let event = iterator.next() {
+                subject.on(event)
+            }
+        }
+        return (subject, next)
+    }
 
 }
 
 extension PublishedSubject where T == String {
     public static func from(_ string: T) -> (PublishedSubject<T>, () -> Void) {
-        let subject = PublishedSubject<T>()
-        var iterator = string.makeIterator()
-        let next: (() -> Void) = {
-            if let char = iterator.next().map({ "\($0)" }) {
-                switch char {
-                case "-":
-                    break
-                case "|":
-                    subject.on(.completed)
-                default:
-                    subject.on(.next(char))
-                }
+        return PublishedSubject.from(Array(string).map { char in
+            let value = "\(char)"
+            switch value {
+            case "-": return Event.tick
+            case "|": return Event.completed
+            default: return Event.next(value)
             }
-        }
-        return (subject, next)
+        })
     }
 }
