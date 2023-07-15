@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PublishedSubject<T> {
+public class PublishedSubject<T> {
     public var latestValue: T?
     var state: State = .idle
     var subscribers: [Subscriber<T>] = []
@@ -10,7 +10,7 @@ public struct PublishedSubject<T> {
         self.latestValue = value
     }
 
-    mutating public func subscribe(_ id: String = UUID().uuidString,
+    public func subscribe(_ id: String = UUID().uuidString,
                                    onNext: ((T) -> Void)? = nil,
                                    onError: ((Error) -> ())? = nil,
                                    onComplete: (() -> Void)? = nil
@@ -24,7 +24,7 @@ public struct PublishedSubject<T> {
         subscribers.append(subscriber)
     }
 
-    mutating public func on(_ event: Event<T>) {
+    public func on(_ event: Event<T>) {
         // 1. change idle to subscribed
         // 2. notify every observers
 
@@ -33,9 +33,12 @@ public struct PublishedSubject<T> {
         }
     }
 
-    mutating func process(_ effect: Effect) {
+    func process(_ effect: Effect) {
         switch effect {
         case .apply(let state):
+            if case let .latestValue(value) = state {
+                self.latestValue = value
+            }
             self.state = state
             subscribers.forEach { subscriber in
                 notify(subscriber, state: state)
@@ -43,7 +46,7 @@ public struct PublishedSubject<T> {
         }
     }
 
-    mutating func notify(_ subscriber: Subscriber<T>, state: State) {
+    func notify(_ subscriber: Subscriber<T>, state: State) {
         switch state {
         case .latestValue(let value):
             events.append(.init(id: subscriber.id, event: .onNext(value)))
@@ -91,4 +94,25 @@ public struct PublishedSubject<T> {
         case apply(State)
     }
 
+
+}
+
+extension PublishedSubject where T == String {
+    public static func from(_ string: T) -> (PublishedSubject<T>, () -> Void) {
+        let subject = PublishedSubject<T>()
+        var iterator = string.makeIterator()
+        let next: (() -> Void) = {
+            if let char = iterator.next().map({ "\($0)" }) {
+                switch char {
+                case "-":
+                    break
+                case "|":
+                    subject.on(.completed)
+                default:
+                    subject.on(.next(char))
+                }
+            }
+        }
+        return (subject, next)
+    }
 }

@@ -43,6 +43,34 @@ final class PublishedSubjectTests: XCTestCase {
                        ])
     }
 
+    func testFromString() {
+        let stream1 = "-1--2-|"
+        let (subject, next) = PublishedSubject.from(stream1)
+        subject.subscribe("a")
+
+        XCTAssertEqual(subject.latestValue, nil)
+        next()
+        XCTAssertEqual(subject.latestValue, nil)
+        next()
+        XCTAssertEqual(subject.latestValue, "1")
+        next()
+        XCTAssertEqual(subject.latestValue, "1")
+        next()
+        XCTAssertEqual(subject.latestValue, "1")
+        next()
+        XCTAssertEqual(subject.latestValue, "2")
+        next()
+        XCTAssertEqual(subject.latestValue, "2")
+        next()
+        XCTAssertEqual(subject.latestValue, "2")
+
+        XCTAssertEqual(subject.events, [
+            .init(id: "a", event: .onNext("1")),
+            .init(id: "a", event: .onNext("2")),
+            .init(id: "a", event: .onComplete),
+        ])
+    }
+
     enum SomeError: Swift.Error {
         case unexpected
     }
