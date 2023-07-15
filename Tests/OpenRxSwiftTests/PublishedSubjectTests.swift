@@ -6,9 +6,9 @@ final class PublishedSubjectTests: XCTestCase {
     var subject = PublishedSubject<Int>()
 
     func testSubscribe() {
-        let sub1 = subject.subscribe("a")
+        let sub1 = subject.subscribe()
         subject.on(.next(1))
-        let sub2 = subject.subscribe("b")
+        let sub2 = subject.subscribe()
         subject.on(.next(2))
         XCTAssertEqual(sub1.events, [
             .onNext(1),
@@ -20,9 +20,9 @@ final class PublishedSubjectTests: XCTestCase {
     }
 
     func testComplete() {
-        let sub1 = subject.subscribe("a")
+        let sub1 = subject.subscribe()
         subject.on(.completed)
-        let sub2 = subject.subscribe("b")
+        let sub2 = subject.subscribe()
         subject.on(.next(1))
         subject.on(.error(SomeError.unexpected))
 
@@ -34,9 +34,9 @@ final class PublishedSubjectTests: XCTestCase {
     }
 
     func testError() {
-        let sub1 = subject.subscribe("a")
+        let sub1 = subject.subscribe()
         subject.on(.error(SomeError.unexpected))
-        let sub2 = subject.subscribe("b")
+        let sub2 = subject.subscribe()
         subject.on(.next(1))
         subject.on(.completed)
 
@@ -50,7 +50,7 @@ final class PublishedSubjectTests: XCTestCase {
     func testFromString() {
         let stream1 = "-1--2-|"
         let (subject, next) = PublishedSubject.from(stream1)
-        let sub1 = subject.subscribe("a")
+        let sub1 = subject.subscribe()
 
         XCTAssertEqual(subject.latestValue, nil)
         next()

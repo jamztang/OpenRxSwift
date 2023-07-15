@@ -9,18 +9,27 @@ public class PublishedSubject<T> {
         self.latestValue = value
     }
 
-    public func subscribe(_ id: String = UUID().uuidString,
-                                   onNext: ((T) -> Void)? = nil,
-                                   onError: ((Error) -> ())? = nil,
-                                   onComplete: (() -> Void)? = nil
-    ) -> Subscriber<T> {
-        let subscriber = Subscriber(
-            onNext: onNext,
-            onComplete: onComplete,
-            onError: onError
-        )
+    public func subscribe(onEvent: @escaping ((Subscriber<T>.Event) -> Void)) -> Subscriber<T> {
+        let subscriber = Subscriber(onEvent: onEvent)
         subscribers.append(subscriber)
         return subscriber
+    }
+
+    public func subscribe(onNext: ((T) -> Void)? = nil,
+                          onError: ((Error) -> ())? = nil,
+                          onComplete: (() -> Void)? = nil
+    ) -> Subscriber<T> {
+        let onEvent: ((Subscriber<T>.Event) -> Void) = {
+            switch $0 {
+            case .onComplete:
+                onComplete?()
+            case .onError(let error):
+                onError?(error)
+            case .onNext(let value):
+                onNext?(value)
+            }
+        }
+        return subscribe(onEvent: onEvent)
     }
 
     public func on(_ event: Event<T>) {
@@ -47,11 +56,11 @@ public class PublishedSubject<T> {
     func notify(_ subscriber: Subscriber<T>, state: State) {
         switch state {
         case .latestValue(let value):
-            subscriber.onNext(value)
+            subscriber.onEvent(.onNext(value))
         case .error(let error):
-            subscriber.onError(error)
+            subscriber.onEvent(.onError(error))
         case .completed:
-            subscriber.onComplete()
+            subscriber.onEvent(.onComplete)
         case .idle:
             break
         }

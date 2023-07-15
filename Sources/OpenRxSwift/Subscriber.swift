@@ -1,43 +1,26 @@
 import Foundation
 
 public class Subscriber<T> {
-    enum Event {
+    public enum Event {
         case onNext(T)
         case onComplete
         case onError(Error)
     }
-
-    var _onNext: ((T) -> Void)?
-    var _onComplete: (() -> Void)?
-    var _onError: ((Error) -> Void)?
-
     var events: [Event] = []
 
-    init(onNext: ((T) -> Void)?,
-         onComplete: (() -> Void)?,
-         onError: ((Error) -> Void)?
-    ) {
-        _onNext = onNext
-        _onComplete = onComplete
-        _onError = onError
+    var _onEvent: (Event) -> Void
+    init(onEvent: @escaping (Event) -> Void) {
+        _onEvent = onEvent
     }
 
-    func onNext(_ value: T) {
-        events.append(.onNext(value))
-        _onNext?(value)
-    }
-    func onComplete() {
-        events.append(.onComplete)
-        _onComplete?()
-    }
-    func onError(_ error: Error) {
-        events.append(.onError(error))
-        _onError?(error)
+    func onEvent(_ event: Event) {
+        events.append(event)
+        _onEvent(event)
     }
 }
 
 extension Subscriber.Event: CustomStringConvertible {
-    var description: String {
+    public var description: String {
         switch self {
         case .onComplete:
             return "onComplete"
@@ -50,7 +33,7 @@ extension Subscriber.Event: CustomStringConvertible {
 }
 
 extension Subscriber.Event: Equatable where T: Equatable {
-    static func == (lhs: Subscriber<T>.Event, rhs: Subscriber<T>.Event) -> Bool {
+    public static func == (lhs: Subscriber<T>.Event, rhs: Subscriber<T>.Event) -> Bool {
         switch (lhs, rhs) {
         case let (.onNext(lhsValue), .onNext(rhsValue)):
             return lhsValue == rhsValue
