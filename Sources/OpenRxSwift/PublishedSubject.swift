@@ -4,7 +4,6 @@ public class PublishedSubject<T> {
     public var latestValue: T?
     var state: State = .idle
     var subscribers: [Subscriber<T>] = []
-    var events: [SubscriberEvent<T>] = [] // for testing
 
     public init(_ value: T? = nil) {
         self.latestValue = value
@@ -14,20 +13,19 @@ public class PublishedSubject<T> {
                                    onNext: ((T) -> Void)? = nil,
                                    onError: ((Error) -> ())? = nil,
                                    onComplete: (() -> Void)? = nil
-    ) {
+    ) -> Subscriber<T> {
         let subscriber = Subscriber(
-            id: id,
             onNext: onNext,
             onComplete: onComplete,
             onError: onError
         )
         subscribers.append(subscriber)
+        return subscriber
     }
 
     public func on(_ event: Event<T>) {
         // 1. change idle to subscribed
         // 2. notify every observers
-
         if let effect = state.handle(event) {
             process(effect)
         }
@@ -49,14 +47,11 @@ public class PublishedSubject<T> {
     func notify(_ subscriber: Subscriber<T>, state: State) {
         switch state {
         case .latestValue(let value):
-            events.append(.init(id: subscriber.id, event: .onNext(value)))
-            subscriber.onNext?(value)
+            subscriber.onNext(value)
         case .error(let error):
-            events.append(.init(id: subscriber.id, event: .onError(error)))
-            subscriber.onError?(error)
+            subscriber.onError(error)
         case .completed:
-            events.append(.init(id: subscriber.id, event: .onComplete))
-            subscriber.onComplete?()
+            subscriber.onComplete()
         case .idle:
             break
         }

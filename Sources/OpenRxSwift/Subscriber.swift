@@ -1,16 +1,39 @@
 import Foundation
 
-struct Subscriber<T> {
+public class Subscriber<T> {
     enum Event {
         case onNext(T)
         case onComplete
         case onError(Error)
     }
 
-    var id: String
-    var onNext: ((T) -> Void)?
-    var onComplete: (() -> Void)?
-    var onError: ((Error) -> Void)?
+    var _onNext: ((T) -> Void)?
+    var _onComplete: (() -> Void)?
+    var _onError: ((Error) -> Void)?
+
+    var events: [Event] = []
+
+    init(onNext: ((T) -> Void)?,
+         onComplete: (() -> Void)?,
+         onError: ((Error) -> Void)?
+    ) {
+        _onNext = onNext
+        _onComplete = onComplete
+        _onError = onError
+    }
+
+    func onNext(_ value: T) {
+        events.append(.onNext(value))
+        _onNext?(value)
+    }
+    func onComplete() {
+        events.append(.onComplete)
+        _onComplete?()
+    }
+    func onError(_ error: Error) {
+        events.append(.onError(error))
+        _onError?(error)
+    }
 }
 
 extension Subscriber.Event: CustomStringConvertible {
