@@ -111,6 +111,55 @@ public class PublishedSubject<T> {
         return (subject, next)
     }
 
+    public static func concat(_ lhs: PublishedSubject<T>, _ rhs: PublishedSubject<T>) -> PublishedSubject<T> {
+        let subject = PublishedSubject<T>()
+        let sub1 = lhs.subscribe { event in
+            switch event {
+            case .onError(let error):
+                subject.on(.error(error))
+            case .onNext(let value):
+                subject.on(.next(value))
+            case .onComplete:
+                let sub2 = rhs.subscribe { event in
+                    switch event {
+                    case .onError(let error):
+                        subject.on(.error(error))
+                    case .onNext(let value):
+                        subject.on(.next(value))
+                    case .onComplete:
+                        subject.on(.completed)
+                    }
+                }
+            }
+        }
+        return subject
+    }
+
+    public static func merge(_ lhs: PublishedSubject<T>, _ rhs: PublishedSubject<T>) -> PublishedSubject<T> {
+        let subject = PublishedSubject<T>()
+        let sub1 = lhs.subscribe { event in
+            switch event {
+            case .onError(let error):
+                subject.on(.error(error))
+            case .onNext(let value):
+                subject.on(.next(value))
+            case .onComplete:
+                break
+            }
+        }
+
+        let sub2 = rhs.subscribe { event in
+            switch event {
+            case .onError(let error):
+                subject.on(.error(error))
+            case .onNext(let value):
+                subject.on(.next(value))
+            case .onComplete:
+                subject.on(.completed)
+            }
+        }
+        return subject
+    }
 }
 
 extension PublishedSubject where T == String {
